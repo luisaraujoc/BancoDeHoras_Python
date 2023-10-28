@@ -5,7 +5,6 @@ import PySimpleGUI as sg
 from dracula_theme import dracula_theme
 
 ## Para conhecimento
-
 # Estrutura de dados em Python para representar o JSON
 estrutura_pontos = {
     "funcionarios": [
@@ -52,7 +51,6 @@ layout = [
     [sg.Text("Data dos pontos:"), sg.InputText(key="matricula_ver_pontos")],
     [sg.Text("Data dos pontos:"), sg.InputText(default_text=dataHoraAtual.strftime("%d-%m-%Y"), key="data_ver_pontos")],
     [sg.Button("Ver")],
-    # [sg.Multiline("", size=(40, 6), key="pontos_registrados")],
 ]
 
 window = sg.Window("Controle de Ponto", layout)
