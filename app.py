@@ -114,6 +114,14 @@ def calcularHorasTrabalhadas(pontos):
         horas_trabalhadas = sum([calcularDiferencaHoras(entrada, saida) for entrada, saida in zip(horas_entrada, horas_saida)])
     return horas_trabalhadas
 
+# Função para calcular as horas totais no mês
+def calcularHorasTotaisNoMes(pontos, mes):
+    horas_totais = 0
+    for ponto in pontos:
+        if ponto["data"].endswith(mes):
+            horas_totais += calcularHorasTrabalhadas([ponto])
+    return horas_totais
+
 # Função para calcular a diferença entre duas horas no formato HH:MM
 def calcularDiferencaHoras(hora1, hora2):
     h1, m1 = map(int, hora1.split(":"))
@@ -136,14 +144,22 @@ def adicionar_funcionario(matricula, nome):
 def ver_pontos(matricula, data):
     for funcionario in dados["funcionarios"]:
         if funcionario["matricula"] == matricula:
-            pontos_funcionario = [ponto for ponto in funcionario["pontos"] if ponto["data"] == data]
-            if pontos_funcionario:
-                horas_trabalhadas = calcularHorasTrabalhadas(pontos_funcionario)
-                pontos_text = "\n".join(f"{ponto['hora']}" for ponto in pontos_funcionario)
-                sg.popup(f"Pontos de {funcionario['nome']} em {data}:\n{pontos_text}\nHoras trabalhadas: {int(horas_trabalhadas)} horas {int((horas_trabalhadas - int(horas_trabalhadas)) * 60)} minutos")
-                break
+            if data:
+                # Filtrar os pontos para a data especificada
+                pontos_funcionario = [ponto for ponto in funcionario["pontos"] if ponto["data"] == data]
+                if pontos_funcionario:
+                    horas_trabalhadas = calcularHorasTrabalhadas(pontos_funcionario)
+                    pontos_text = "\n".join(f"{ponto['hora']}" for ponto in pontos_funcionario)
+                    sg.popup(f"Pontos de {funcionario['nome']} em {data}:\n{pontos_text}\nHoras trabalhadas: {int(horas_trabalhadas)} horas {int((horas_trabalhadas - int(horas_trabalhadas)) * 60)} minutos")
+                else:
+                    sg.popup(f"Nenhum ponto registrado para {funcionario['nome']} em {data}")
             else:
-                sg.popup(f"Nenhum ponto registrado para {funcionario['nome']} em {data}")
+                # Calcular as horas totais no mês
+                data_atual = datetime.datetime.now()
+                mes_atual = data_atual.strftime("%m-%Y")
+                horas_totais = calcularHorasTotaisNoMes(funcionario["pontos"], mes_atual)
+                sg.popup(f"Pontos de {funcionario['nome']} no mês atual:\nHoras trabalhadas no mês: {int(horas_totais)} horas {int((horas_totais - int(horas_totais)) * 60)} minutos")
+            break
     else:
         sg.popup("Funcionário não encontrado.")
 
