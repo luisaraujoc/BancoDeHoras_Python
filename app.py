@@ -1,55 +1,25 @@
 import json
 import datetime
 import PySimpleGUI as sg
-
 from dracula_theme import dracula_theme
-
-## Para conhecimento
-# Estrutura de dados em Python para representar o JSON
-estrutura_pontos = {
-    "funcionarios": [
-        {
-            "matricula": "12345",
-            "nome": "Exemplo1",
-            "pontos": [
-                {"data": "01-01-2023", "hora": "08:00"},
-                {"data": "01-01-2023", "hora": "12:00"},
-                {"data": "01-01-2023", "hora": "13:00"},
-                {"data": "01-01-2023", "hora": "17:00"},
-                {"data": "02-01-2023", "hora": "08:30"},
-                {"data": "02-01-2023", "hora": "16:30"},
-            ]
-        },
-        {
-            "matricula": "54321",
-            "nome": "Exemplo2",
-            "pontos": [
-                {"data": "01-01-2023", "hora": "09:00"},
-                {"data": "01-01-2023", "hora": "12:30"},
-                {"data": "01-01-2023", "hora": "14:00"},
-                {"data": "01-01-2023", "hora": "18:30"},
-            ]
-        }
-    ]
-}
 
 # Código em si
 
 dataHoraAtual = datetime.datetime.now()
 
+# Defina o tema como 'DarkGrey5'
 
-# Defina o tema como 'Dracula'
+sg.theme_add_new('Dracula', dracula_theme)
 sg.theme('Dracula')
-
 
 layout = [
     [sg.Text("Matrícula do Funcionário:"), sg.InputText(key="matricula")],
-    [sg.Text("Nome do Funcionário:"), sg.InputText(key="nome")],
+    [sg.Text("Nome do Funcionário:"), sg.InputText(key="nome")],  # Adicione o campo de nome
     [sg.Button("Registrar Ponto"), sg.Button("Registrar Funcionário"), sg.Button("Sair")],
     [sg.Text("", size=(40, 1), key="output")],
     [sg.Text("Ver Pontos do Funcionário:")],
-    [sg.Text("Data dos pontos:"), sg.InputText(key="matricula_ver_pontos")],
-    [sg.Text("Data dos pontos:"), sg.InputText(default_text=dataHoraAtual.strftime("%d-%m-%Y"), key="data_ver_pontos")],
+    [sg.Text("Matrícula do funcionário:"), sg.InputText(key="matricula_ver_pontos")],
+    [sg.Text("Mês dos pontos:"), sg.InputText(default_text=dataHoraAtual.strftime("%m-%Y"), key="mes_ver_pontos")],  # Adicione o campo de mês
     [sg.Button("Ver")],
 ]
 
@@ -60,7 +30,7 @@ focus_lost = {
     "matricula": False,
     "nome": False,
     "matricula_ver_pontos": False,
-    "data_ver_pontos": False
+    "mes_ver_pontos": False  # Adicione o campo de mês
 }
 
 # Função para carregar os dados do arquivo JSON
@@ -93,14 +63,19 @@ def registrarPontoPorMatricula(dados, matricula):
                     break
 
 # Função para adicionar um novo funcionário
-def adicionarFuncionario(dados, matricula, nome):
+def salvarFuncionário(dados, matricula, nome):
     funcionarios = dados.get("funcionarios", [])
-    novoFuncionario = {
-        "matricula": matricula,
-        "nome": nome,
-        "pontos": []
-    }
-    funcionarios.append(novoFuncionario)
+    for funcionario in funcionarios:
+        if funcionario["matricula"] == matricula:
+            funcionario["nome"] = nome
+            break
+    else:
+        novoFuncionario = {
+            "matricula": matricula,
+            "nome": nome,
+            "pontos": []
+        }
+        funcionarios.append(novoFuncionario)
     dados["funcionarios"] = funcionarios
 
 # Função para calcular a quantidade de horas trabalhadas em um dia
@@ -117,7 +92,7 @@ def calcularHorasTotaisNoMes(pontos, mes):
     horas_totais = 0
     for ponto in pontos:
         if ponto["data"].endswith(mes):
-            horas_totais += calcularHorasTrabalhadas([ponto])
+            horas_totais += calcularHorasTrabalhadas([p for p in pontos if p["data"].endswith(mes)])
     return horas_totais
 
 # Função para calcular a diferença entre duas horas no formato HH:MM
@@ -132,31 +107,23 @@ def registrar_ponto(matricula):
     salvarDados(nomeArquivo, dados)
     sg.popup("Ponto registrado com sucesso.")
 
-# Função para adicionar um novo funcionário quando o botão for pressionado
+# Modifique a função adicionar_funcionario para permitir atualização
 def adicionar_funcionario(matricula, nome):
-    # Chamada para a função adicionarFuncionario com a matrícula e nome fornecidos
-    adicionarFuncionario(dados, matricula, nome)
+    # Chamada para a função salvarFuncionário com a matrícula e nome fornecidos
+    salvarFuncionário(dados, matricula, nome)
     salvarDados(nomeArquivo, dados)
-    sg.popup("Funcionário registrado com sucesso.")
-    
-def ver_pontos(matricula, data):
+    sg.popup("Funcionário registrado/atualizado com sucesso.")
+
+# Modifique a função ver_pontos para permitir a escolha do mês para o relatório
+def ver_pontos(matricula, mes):
     for funcionario in dados["funcionarios"]:
         if funcionario["matricula"] == matricula:
-            if data:
-                # Filtrar os pontos para a data especificada
-                pontos_funcionario = [ponto for ponto in funcionario["pontos"] if ponto["data"] == data]
-                if pontos_funcionario:
-                    horas_trabalhadas = calcularHorasTrabalhadas(pontos_funcionario)
-                    pontos_text = "\n".join(f"{ponto['hora']}" for ponto in pontos_funcionario)
-                    sg.popup(f"Pontos de {funcionario['nome']} em {data}:\n{pontos_text}\nHoras trabalhadas: {int(horas_trabalhadas)} horas {int((horas_trabalhadas - int(horas_trabalhadas)) * 60)} minutos")
-                else:
-                    sg.popup(f"Nenhum ponto registrado para {funcionario['nome']} em {data}")
+            if mes:
+                # Calcular as horas totais no mês especificado
+                horas_totais = calcularHorasTotaisNoMes(funcionario["pontos"], mes)
+                sg.popup(f"Pontos de {funcionario['nome']} no mês {mes}:\nHoras trabalhadas no mês: {int(horas_totais)} horas {int((horas_totais - int(horas_totais)) * 60)} minutos")
             else:
-                # Calcular as horas totais no mês
-                data_atual = datetime.datetime.now()
-                mes_atual = data_atual.strftime("%m-%Y")
-                horas_totais = calcularHorasTotaisNoMes(funcionario["pontos"], mes_atual)
-                sg.popup(f"Pontos de {funcionario['nome']} no mês atual:\nHoras trabalhadas no mês: {int(horas_totais)} horas {int((horas_totais - int(horas_totais)) * 60)} minutos")
+                sg.popup("Por favor, insira o mês para gerar o relatório.")
             break
     else:
         sg.popup("Funcionário não encontrado.")
@@ -186,11 +153,11 @@ while True:
             sg.popup("Por favor, insira a matrícula e o nome.")
     elif event == "Ver":
         matricula_ver_pontos = values["matricula_ver_pontos"]
-        data_ver_pontos = values["data_ver_pontos"]
-        if matricula_ver_pontos and data_ver_pontos:
-            ver_pontos(matricula_ver_pontos, data_ver_pontos)
+        mes_ver_pontos = values["mes_ver_pontos"]
+        if matricula_ver_pontos and mes_ver_pontos:
+            ver_pontos(matricula_ver_pontos, mes_ver_pontos)
         else:
-            sg.popup("Por favor, insira a matrícula e a data.")
+            sg.popup("Por favor, insira a matrícula e o mês.")
 
     # Lidar com o evento FocusIn para remover o texto de placeholder
     for key in focus_lost:

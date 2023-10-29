@@ -13,5 +13,3 @@ dracula_theme = {
     'SLIDER_DEPTH': 0,
     'PROGRESS_DEPTH': 0
 }
-
-sg.theme_add_new('Dracula', dracula_theme)
